@@ -87,6 +87,8 @@ Después abre `http://localhost:8000` en el navegador.
 | `Espacio` | Hard drop (caída instantánea)     |
 | `P`       | Pausar / reanudar                 |
 
+El interruptor **THEME** del panel lateral alterna entre tema oscuro (por defecto) y claro con el ratón. La elección no se guarda entre sesiones.
+
 ---
 
 ## Cómo funciona
@@ -103,7 +105,7 @@ Define la estructura visual:
 
 ### 2. `style.css`
 
-Aporta el aspecto visual con estética _dark / retro arcade_: fondo oscuro, tipografía monoespaciada para los marcadores y _backdrop blur_ en los overlays.
+Aporta el aspecto visual con estética _dark / retro arcade_: fondo oscuro por defecto (con tema claro opcional mediante variables CSS y `data-theme`), tipografía monoespaciada para los marcadores y _backdrop blur_ en los overlays.
 
 ### 3. `game.js`
 
@@ -158,7 +160,7 @@ Cuando una pieza recién generada ya colisiona al aparecer (`spawn`), se dispara
 ```
 03-tetris/
 ├── index.html      # Estructura del DOM y canvas
-├── style.css       # Estilos del juego (dark theme)
+├── style.css       # Estilos del juego (dark/light theme)
 ├── game.js         # Toda la lógica del Tetris (~300 líneas)
 └── README.md
 ```
