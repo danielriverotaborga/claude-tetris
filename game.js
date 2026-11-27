@@ -13,6 +13,11 @@ const COLORS = [
   '#e57373', // Z - red
   '#7986cb', // J - indigo
   '#ffb74d', // L - orange
+  '#f06292', // + - pink
+  '#a1887f', // U - brown
+  '#90a4ae', // Y - blue grey
+  '#ffffff', // 1×1 - white
+  '#c6ff00', // 3×3 hueca - lime
 ];
 
 const PIECES = [
@@ -24,7 +29,22 @@ const PIECES = [
   [[5,5,0],[0,5,5],[0,0,0]],                  // Z
   [[6,0,0],[6,6,6],[0,0,0]],                  // J
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
+  [[0,8,0],[8,8,8],[0,8,0]],                  // +
+  [[9,0,9],[9,9,9],[0,0,0]],                  // U
+  [[0,0,0,0],[10,10,10,10],[0,10,0,0],[0,0,0,0]], // Y
+  [[11]],                                      // 1×1
+  [[12,12,12],[12,0,12],[12,12,12]],          // 3×3 hueca
 ];
+
+// grupos de tipos (índices de PIECES)
+const STANDARD_TYPES = [1, 2, 3, 4, 5, 6, 7];
+const PENTOMINO_TYPES = [8, 9, 10];
+const SINGLE_TYPE = 11; // solo como recompensa tras un Tetris
+const HOLLOW_TYPE = 12;
+
+// probabilidad de aparición; el resto son piezas estándar
+const PENTOMINO_CHANCE = 0.10;
+const HOLLOW_CHANCE = 0.03;
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
@@ -40,16 +60,26 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
 }
 
-function randomPiece() {
-  const type = Math.floor(Math.random() * 7) + 1;
+function createPiece(type) {
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+}
+
+function pickRandom(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function randomPiece() {
+  const roll = Math.random();
+  if (roll < HOLLOW_CHANCE) return createPiece(HOLLOW_TYPE);
+  if (roll < HOLLOW_CHANCE + PENTOMINO_CHANCE) return createPiece(pickRandom(PENTOMINO_TYPES));
+  return createPiece(pickRandom(STANDARD_TYPES));
 }
 
 function collide(shape, ox, oy) {
@@ -104,6 +134,7 @@ function clearLines() {
     }
   }
   if (cleared) {
+    if (cleared === 4) rewardPending = true; // Tetris
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
@@ -138,12 +169,15 @@ function softDrop() {
 function lockPiece() {
   merge();
   clearLines();
+  dropAccum = 0; // la pieza nueva empieza con un intervalo completo
   spawn();
 }
 
 function spawn() {
   current = next;
-  next = randomPiece();
+  // la recompensa entra por la vista previa: no cambia la pieza ya anunciada
+  next = rewardPending ? createPiece(SINGLE_TYPE) : randomPiece();
+  rewardPending = false;
   if (collide(current.shape, current.x, current.y)) {
     endGame();
   }
@@ -194,6 +228,9 @@ function draw() {
     for (let c = 0; c < COLS; c++)
       drawBlock(ctx, c, r, board[r][c], BLOCK);
 
+  // en game over la pieza actual solapa el tablero: no se dibuja
+  if (gameOver) return;
+
   // ghost
   const gy = ghostY();
   for (let r = 0; r < current.shape.length; r++)
@@ -221,6 +258,7 @@ function drawNext() {
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
+  draw();
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
   overlay.classList.remove('hidden');
@@ -230,6 +268,7 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    overlay.classList.add('hidden');
     lastTime = performance.now();
     loop(lastTime);
   } else {
@@ -252,6 +291,8 @@ function loop(ts) {
       lockPiece();
     }
   }
+  // lockPiece() puede haber terminado la partida en este mismo frame
+  if (gameOver) return;
   draw();
   animId = requestAnimationFrame(loop);
 }
@@ -266,16 +307,21 @@ function init() {
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
+  rewardPending = false;
   next = randomPiece();
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  restartBtn.blur(); // que Space no vuelva a pulsar el botón durante la partida
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
+  // evita el scroll de la página sin bloquear atajos del navegador ni el botón enfocado
+  const scrolls = e.code.startsWith('Arrow') || (e.code === 'Space' && e.target !== restartBtn);
+  if (scrolls && !e.altKey && !e.ctrlKey && !e.metaKey) e.preventDefault();
+  if (e.code === 'KeyP') { if (!e.repeat) togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
@@ -292,8 +338,7 @@ document.addEventListener('keydown', e => {
       tryRotate();
       break;
     case 'Space':
-      e.preventDefault();
-      hardDrop();
+      if (!e.repeat) hardDrop();
       break;
   }
   updateHUD();

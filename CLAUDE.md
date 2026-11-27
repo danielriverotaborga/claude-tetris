@@ -29,7 +29,8 @@ Cambios de comportamiento se verifican jugando en el navegador.
 
 ## Invariantes
 
-- Índice de tipo de pieza (1–7) = índice en `PIECES` = índice en `COLORS` = valor de celda en `board` (0 = vacía). Los números dentro de cada matriz de `PIECES` son ese índice. `randomPiece()` tiene el `7` hardcodeado: añadir piezas exige cambiarlo.
+- Índice de tipo de pieza (1–12) = índice en `PIECES` = índice en `COLORS` = valor de celda en `board` (0 = vacía). Los números dentro de cada matriz de `PIECES` son ese índice. Una pieza nueva solo aparece si se añade a un grupo (`STANDARD_TYPES`, `PENTOMINO_TYPES`…) que use `randomPiece()`.
+- La 1×1 (`SINGLE_TYPE`) no sale al azar: `clearLines()` marca `rewardPending` tras un Tetris y `spawn()` la pone en `next`.
 - Piezas son matrices cuadradas; `rotateCW` + wall kicks horizontales en `tryRotate` (no es SRS).
 - `COLS`/`ROWS`/`BLOCK` deben coincidir con `width`/`height` de `<canvas id="board">`. La vista previa usa su propio tamaño (`NB = 30`, rejilla 4×4, canvas 120×120).
 - Velocidad inicial en `init()`, curva por nivel en `clearLines()`: cambiar ambas coherentemente.
