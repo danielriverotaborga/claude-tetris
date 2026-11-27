@@ -75,6 +75,15 @@ jobs:
                ## Verificación (cómo probarlo en el navegador)
                ## Preguntas abiertas
 
+            El `diagnostico` se publica tal cual como comentario del issue, así que debe ser
+            GitHub Flavored Markdown válido, que GitHub renderice correctamente:
+            - Saltos de línea reales (no la secuencia literal \n) y línea en blanco entre bloques.
+            - No envuelvas todo el diagnóstico en un bloque de código ni añadas un título `#`
+              (el workflow ya lo pone); empieza en `## Resumen`.
+            - Bloques de código con triple acento grave y lenguaje (js, html, css, bash).
+            - Nombres de archivos, funciones, variables e IDs entre acentos graves.
+            - Listas, tablas y listas de tareas (`- [ ]`) con sintaxis de GitHub.
+
             Distingue lo comprobado en el código de lo que es hipótesis.
             Si falta información, dilo en vez de inventarla. No menciones usuarios con @.
           claude_args: |
